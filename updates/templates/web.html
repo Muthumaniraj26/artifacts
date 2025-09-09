@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Archaeological Artifact Identification App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #8B4513;
+            --secondary-color: #CD853F;
+            --accent-color: #D2B48C;
+            --light-color: #F5F5DC;
+            --dark-color: #4B3621;
+            --app-background: #f0e6d6;
+            --card-background: rgba(255, 255, 255, 0.92);
+        }
+        
+        body {
+            background-color: var(--app-background);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            padding-top: 60px;
+        }
+        
+        .app-header {
+            background-color: var(--primary-color);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .app-content {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .app-section {
+            margin-bottom: 30px;
+        }
+        
+        .app-nav {
+            display: flex;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .app-nav::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .nav-item {
+            flex: 0 0 auto;
+            margin-right: 15px;
+        }
+        
+        .nav-link {
+            padding: 10px 20px;
+            border-radius: 20px;
+            background-color: #f0e6d6;
+            color: var(--primary-color);
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+            border: none;
+            background-color: var(--card-background);
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-download {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            padding: 12px 25px;
+            font-size: 1.1rem;
+        }
+        
+        .platform-card {
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .platform-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .platform-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .section-title {
+            position: relative;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .app-footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+            margin-top: 30px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .requirements-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .requirements-list li {
+            padding: 5px 0;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .requirements-list li:before {
+            content: "•";
+            color: var(--primary-color);
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1.5em;
+            font-size: 1.2rem;
+        }
+        
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            background: #f1f1f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            border-radius: 8px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+            
+            .app-content {
+                padding: 20px;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .platform-icon {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="container d-flex justify-content-between align-items-center h-100">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-monument me-2"></i>
+                <span class="fw-bold">Artifact Identifier</span>
+            </div>
+            <div class="d-none d-md-block">
+                <span>Download Our App</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- App Navigation -->
+        <nav class="app-nav">
+            <div class="nav-item">
+                <a class="nav-link active" href="#download">Download</a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" href="#requirements">Requirements</a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" href="#instructions">Instructions</a>
+            </div>
+            <div class="nav-item">
+                <a class="nav-link" href="#features">Features</a>
+            </div>
+        </nav>
+
+        <!-- Main App Content -->
+        <div class="app-content">
+            <!-- Download Section -->
+            <section id="download" class="app-section">
+                <h2 class="section-title">Download the App</h2>
+                <p class="lead text-center mb-5">Access our powerful archaeological analysis tools on your preferred platform</p>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <div class="card platform-card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fab fa-android"></i>
+                                </div>
+                                <h3>Android</h3>
+                                <p>Download from Google Play Store for all Android devices</p>
+                                <div class="qr-code">
+                                    <i class="fas fa-mobile-alt" style="font-size: 4rem; color: #ccc;"></i>
+                                </div>
+                                <p class="small">Scan QR code or click below to download</p>
+                                <button class="btn btn-primary btn-download mt-3">
+                                    <i class="fab fa-google-play me-2"></i>Google Play
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-4">
+                        <div class="card platform-card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fab fa-apple"></i>
+                                </div>
+                                <h3>iOS</h3>
+                                <p>Available on the App Store for iPhone and iPad</p>
+                                <div class="qr-code">
+                                    <i class="fas fa-mobile-alt" style="font-size: 4rem; color: #ccc;"></i>
+                                </div>
+                                <p class="small">Scan QR code or click below to download</p>
+                                <button class="btn btn-primary btn-download mt-3">
+                                    <i class="fab fa-app-store me-2"></i>App Store
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-4">
+                        <div class="card platform-card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-desktop"></i>
+                                </div>
+                                <h3>Web Version</h3>
+                                <p>Use our web app directly in your browser</p>
+                                <div class="qr-code">
+                                    <i class="fas fa-qrcode" style="font-size: 4rem; color: #ccc;"></i>
+                                </div>
+                                <p class="small">Scan QR code or click below to access</p>
+                                <button class="btn btn-primary btn-download mt-3">
+                                    <i class="fas fa-external-link-alt me-2"></i>Open Web App
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Requirements Section -->
+            <section id="requirements" class="app-section">
+                <h2 class="section-title">System Requirements</h2>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Mobile App Requirements</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Android:</h6>
+                                <ul class="requirements-list">
+                                    <li>Android 8.0 (Oreo) or later</li>
+                                    <li>2GB RAM or more</li>
+                                    <li>100MB free storage space</li>
+                                    <li>Camera with autofocus</li>
+                                    <li>Internet connection for analysis</li>
+                                </ul>
+                                
+                                <h6>iOS:</h6>
+                                <ul class="requirements-list">
+                                    <li>iOS 13.0 or later</li>
+                                    <li>iPhone 7 or newer</li>
+                                    <li>iPad 5th generation or newer</li>
+                                    <li>100MB free storage space</li>
+                                    <li>Internet connection for analysis</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Web App Requirements</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Browser Compatibility:</h6>
+                                <ul class="requirements-list">
+                                    <li>Chrome 70 or later</li>
+                                    <li>Firefox 65 or later</li>
+                                    <li>Safari 12 or later</li>
+                                    <li>Edge 79 or later</li>
+                                </ul>
+                                
+                                <h6>Additional Requirements:</h6>
+                                <ul class="requirements-list">
+                                    <li>JavaScript enabled</li>
+                                    <li>WebGL support for 3D models</li>
+                                    <li>Camera access for image capture</li>
+                                    <li>Internet connection</li>
+                                    <li>Minimum 4GB RAM recommended</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Instructions Section -->
+            <section id="instructions" class="app-section">
+                <h2 class="section-title">Installation Instructions</h2>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>For Mobile Devices:</h4>
+                                
+                                <div class="d-flex align-items-start mb-4">
+                                    <span class="step-number">1</span>
+                                    <div>
+                                        <h5>Find our app</h5>
+                                        <p>Open Google Play Store (Android) or App Store (iOS) and search for "Archaeological Artifact Identifier"</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start mb-4">
+                                    <span class="step-number">2</span>
+                                    <div>
+                                        <h5>Download and install</h5>
+                                        <p>Tap the "Install" or "Get" button to download and install the app on your device</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start mb-4">
+                                    <span class="step-number">3</span>
+                                    <div>
+                                        <h5>Open the app</h5>
+                                        <p>Once installed, tap "Open" or find the app icon on your home screen and tap to launch</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start">
+                                    <span class="step-number">4</span>
+                                    <div>
+                                        <h5>Create an account</h5>
+                                        <p>Follow the on-screen instructions to create your account and start using the app</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h4>For Web Version:</h4>
+                                
+                                <div class="d-flex align-items-start mb-4">
+                                    <span class="step-number">1</span>
+                                    <div>
+                                        <h5>Open your browser</h5>
+                                        <p>Launch Chrome, Firefox, Safari, or any other supported browser</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start mb-4">
+                                    <span class="step-number">2</span>
+                                    <div>
+                                        <h5>Navigate to our website</h5>
+                                        <p>Go to <a href="#">www.artifactidentifier.com</a> in your browser's address bar</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start mb-4">
+                                    <span class="step-number">3</span>
+                                    <div>
+                                        <h5>Bookmark the page</h5>
+                                        <p>For easy access, bookmark the website in your browser</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-start">
+                                    <span class="step-number">4</span>
+                                    <div>
+                                        <h5>Optional: Add to home screen</h5>
+                                        <p>On mobile browsers, use the "Add to Home Screen" option for app-like access</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section id="features" class="app-section">
+                <h2 class="section-title">App Features</h2>
+                
+                <div class="row">
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <h5>Image Capture</h5>
+                                <p>Use your device's camera to capture artifact images directly within the app</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <h5>AI Analysis</h5>
+                                <p>Advanced artificial intelligence identifies and classifies artifacts with high accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <h5>Carbon Dating</h5>
+                                <p>Calculate approximate age of organic materials using our carbon-14 dating tool</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </div>
+                                <h5>Regional Database</h5>
+                                <p>Access information about archaeological finds in your region</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <h5>Historical Timeline</h5>
+                                <p>Explore different historical eras and their characteristic artifacts</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <h5>PDF Reports</h5>
+                                <p>Generate comprehensive PDF reports of your artifact analyses</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-cloud"></i>
+                                </div>
+                                <h5>Cloud Sync</h5>
+                                <p>Sync your data across multiple devices with secure cloud storage</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="platform-icon">
+                                    <i class="fas fa-share-alt"></i>
+                                </div>
+                                <h5>Sharing</h5>
+                                <p>Easily share your findings with colleagues or on social media</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- App Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2023 Archaeological Artifact Identification App</p>
+            <p>Advanced AI-powered analysis for historical artifacts</p>
+            <div class="mt-2">
+                <a href="#" class="text-white me-3">Privacy Policy</a>
+                <a href="#" class="text-white me-3">Terms of Service</a>
+                <a href="#" class="text-white">Contact Us</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up navigation
+            const navLinks = document.querySelectorAll('.nav-link');
+            const appSections = document.querySelectorAll('.app-section');
+            
+            // Hide all sections initially
+            appSections.forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show first section by default
+            document.querySelector('#download').style.display = 'block';
+            
+            // Navigation click handler
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Hide all sections
+                    appSections.forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    // Show the target section
+                    const targetId = this.getAttribute('href');
+                    document.querySelector(targetId).style.display = 'block';
+                });
+            });
+            
+            // Simulate download buttons
+            const downloadButtons = document.querySelectorAll('.btn-download');
+            downloadButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    alert('Download functionality would be implemented here. In a real application, this would redirect to the appropriate app store or web application.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
