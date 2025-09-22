@@ -1,7 +1,7 @@
 import os
 import io
 import time
-import math
+import math # <-- IMPORTED FOR HAVERSINE CALCULATION
 import torch
 import torch.nn as nn
 import numpy as np
@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torchvision import models, transforms
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -22,12 +22,33 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 import json
 from PIL import Image as PILImage, UnidentifiedImageError
+import base64
+
 # ------------------------------
 # Flask Setup
 # ------------------------------
 app = Flask(__name__, template_folder='templates', static_folder='static')
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024  # 25MB
+
+# ------------------------------
+# Haversine Distance Function
+# ------------------------------
+def haversine(lat1, lon1, lat2, lon2):
+    """
+    Calculate the great-circle distance between two points
+    on the earth (specified in decimal degrees) in kilometers.
+    """
+    # convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+
+    # haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371 # Radius of earth in kilometers.
+    return c * r
 
 # ------------------------------
 # Model Settings & Data
@@ -41,77 +62,85 @@ CLASS_LABELS = [
 
 DETAILS_MAP= {
     "huntingtool": {
-        "description": """This category covers a wide range of tools for hunting and processing animals. Early examples include simple Oldowan choppers and all-purpose Acheulean hand-axes for butchering and digging. Later, technology got more specialized, leading to refined points like Mousterian points (Neanderthals) and large, fluted Clovis points used to hunt mammoths. Smaller microliths were often combined to make composite tools like barbed harpoons. Scrapers were essential for cleaning hides, while sharp burins were used to carve bone and antler.""",
-        "era": """The timeline for hunting tools spans over 2.5 million years. The Lower Paleolithic is defined by Oldowan and Acheulean tools. The Middle Paleolithic (c. 300,000–40,000 years ago) is known for more advanced toolkits like the Mousterian, made using the prepared-core Levallois technique. The Upper Paleolithic (c. 40,000–10,000 years ago) brought a technological revolution with the atlatl (spear-thrower) and the bow and arrow, which dramatically improved hunting power and range.""",
-        "material": """Stone choice was key. Flint, chert, and obsidian were prized for their predictable conchoidal fracture, which creates razor-sharp edges. Obsidian, a volcanic glass, makes an edge sharper than a modern scalpel. Later, bone, ivory, and antler were carved into deadly harpoons and points. The Bronze and Iron Ages introduced durable metal spearheads and arrowheads that could be reshaped.""",
-        "significance": """These tools are a direct window into early human diet, intelligence, and behavior. The standardization of complex tools suggests abstract thought and teaching. Tool marks on ancient animal bones help us reconstruct food chains and differentiate between hunting and scavenging. The spread of specific tool types also helps us map early human migrations.""",
-        "cultural_context": """Specific toolkits are signatures of different hominin species. Oldowan choppers are linked to Homo habilis, while the Acheulean hand-axe is the hallmark of Homo erectus. The Mousterian industry is famously associated with Neanderthals. The explosion of innovation in the Upper Paleolithic, including blades and bone tools, is tied to the arrival of our species, Homo sapiens.""",
-        "technological_markers": """The main process is knapping (stone shaping). Percussion flaking uses a hammerstone to remove large flakes. Pressure flaking, a more precise method, uses a pointed tool to press off small flakes for final shaping. A huge cognitive leap was hafting—attaching a stone point to a wooden shaft using adhesives like birch-bark tar and bindings like animal sinew."""
-    },
-    "Kendi": {
-        "description": """A Kendi is a unique handleless water vessel, defined by its globular body, a neck for filling, and a distinctive mammiform (breast-shaped) spout. This design allows for pouring or drinking without the user's lips touching the spout, a hygienic feature ideal for communal or ritual use.""",
-        "era": """The Kendi's prominence grew with the great maritime empires of Southeast Asia. Early forms appear during the Srivijayan Empire (7th-13th centuries), but production and trade peaked during the Majapahit Empire in Indonesia (13th-16th centuries) and in the prolific kilns of Siam (Thailand) and Vietnam.""",
-        "material": """Common Kendis were made of earthenware or high-fired stoneware. Vietnamese and Thai kilns were renowned for their exquisite celadon-glazed Kendis. Chinese artisans also produced porcelain Kendis for the Southeast Asian market. For royalty, luxurious Kendis were cast from bronze or crafted from silver.""",
-        "significance": """The Kendi is a key index fossil for tracing the ancient Maritime Silk Road. Finding Kendis in archaeological sites from Japan to eastern Africa maps the vast trade networks that connected Southeast Asia to the wider world. Ritually, it was used to pour sacred water in Hindu-Buddhist ceremonies.""",
-        "cultural_context": """Deeply embedded in Southeast Asian culture, the Kendi is depicted in temple carvings, such as the famous reliefs at Borobudur in Java. It was a vital object in rites of passage, purification ceremonies, and daily life. Its heartland is Indonesia, Malaysia, and Thailand.""",
-        "technological_markers": """High-quality Kendis were wheel-thrown, allowing for precise and elegant forms. The application of glazes, especially celadon, required sophisticated chemical knowledge and precise control of the kiln's atmosphere (a low-oxygen, or 'reduction,' atmosphere). Firing to stoneware temperatures (over 1200°C) required advanced kiln construction."""
-    },
-    "Thakli": {
-        "description": """A Thakli is a type of drop spindle, a simple and ancient tool for spinning fibers like cotton and wool into thread. It consists of a slender shaft and a weighted whorl. The whorl acts as a flywheel, its momentum maintaining the spin as the user drafts fibers, which are twisted into a continuous thread.""",
-        "era": """The spindle whorl is a universal indicator of textile production, with examples found in Neolithic sites globally. In India, terracotta whorls are common artifacts at Indus Valley Civilization sites like Harappa (c. 2500 BCE), pointing to a well-established cotton industry. Its efficient design has remained virtually unchanged for millennia.""",
-        "material": """The whorl is the most durable part and is what archaeologists typically find. They were commonly made of fired clay (terracotta), carved stone, or bone. The shaft, being made of perishable wood or bamboo, rarely survives in the archaeological record.""",
-        "significance": """Finding a spindle whorl is direct evidence of a textile economy. It implies the cultivation of plants like cotton, the herding of sheep for wool, and the existence of looms for weaving cloth. Textiles were a hugely important economic product, and the Thakli represents the fundamental technology that started it all.""",
-        "cultural_context": """The Thakli is intrinsically linked to India's long history of cotton textiles. Mahatma Gandhi famously promoted the spinning wheel (Charkha, a more mechanized version of the spindle) as a potent symbol of Swadeshi (self-reliance) and economic freedom from colonial Britain.""",
-        "technological_markers": """The technology lies in its elegant physics. The whorl must be well-balanced and have a drilled central hole to spin true without wobbling. Its weight and diameter determine the speed of the spin and the thickness of the thread produced. The shaft must be straight and smooth for even winding."""
-    },
-    "shell bangle": {
-        "description": """These are rigid bracelets masterfully cut from the thick wall of a large marine conch shell. Unlike beaded bracelets, these are typically crafted as a single, solid, continuous ring of shell, which requires immense skill to produce without breaking.""",
-        "era": """While shell ornaments are ancient, the large-scale, organized industry of producing bangles from conch shells was a hallmark of the Indus Valley (Harappan) Civilization (c. 2600-1900 BCE).""",
-        "material": """The premier material used in the Indian subcontinent was the sacred conch shell, Turbinella pyrum. This robust, thick-walled shell was sourced from the coasts of Gujarat. The presence of these bangles at inland cities like Harappa and Mohenjo-Daro is clear evidence of sophisticated internal trade networks.""",
-        "significance": """Shell bangles were powerful status symbols, signifying wealth, social rank, and ritual purity. Specialized workshops have been excavated at coastal sites like Nageshwar and Balakot, containing stockpiles of raw shells, manufacturing waste, and finished bangles, pointing to an organized craft production.""",
-        "cultural_context": """The conch shell (Shankha) holds deep religious significance in Hinduism. In modern India, especially in Bengal and Odisha, married women wear white conch shell bangles (Shankha) paired with red coral or lac bangles (Pola) as a symbol of their marital status, a direct cultural echo of ancient traditions.""",
-        "technological_markers": """The production process was multi-staged and required great precision. First, a hollow-bladed bronze saw was used to carefully cut a rough circlet from the main body of the conch. The rough ring was then painstakingly ground into its final shape using abrasives and finally polished to a high sheen."""
-    },
-    "Bead Jewellery": {
-        "description": """This category covers all forms of personal adornment made by stringing perforated beads, including necklaces, collars, bracelets, belts, and headdresses. Beads are one of humanity's oldest forms of art and symbolic communication.""",
-        "era": """The earliest known beads are over 100,000 years old. The Bronze Age saw the mastery of hardstone working, producing exquisite etched carnelian beads in the Indus Valley and intricate faience (a type of proto-glass) collars in Egypt. The Roman era perfected glass-making.""",
-        "material": """The range of materials is vast, including organic materials like shell, bone, and ivory, and common stones like terracotta and soapstone. High-status jewellery used semi-precious stones like deep red carnelian, banded agate, and the brilliant blue lapis lazuli. Precious metals like gold and silver were also used.""",
-        "significance": """Beads are treasure troves of information. The technology used to make them reveals a society's sophistication. Most importantly, beads are a primary indicator of long-distance trade. The presence of lapis lazuli, sourced exclusively from Afghanistan, in the tombs of Egyptian Pharaohs is proof of ancient global trade.""",
-        "cultural_context": """Beads are a universal cultural phenomenon. The Harappan civilization was famous for its mass-produced, long barrel-shaped carnelian beads. The famous 'Dancing Girl' bronze statue from Mohenjo-Daro is depicted wearing a stack of bangles. In ancient Egypt, the elite were buried with magnificent beaded collars, best exemplified by the treasures in the tomb of Tutankhamun.""",
-        "technological_markers": """The critical technology was drilling holes through often very hard materials, accomplished using a bow drill. Polishing was done with fine abrasives to create a lustrous surface. Faceting hard stones and the complex pyrotechnology of glassmaking and faience production were other key markers of advanced societies."""
-    },
-    "alloy": {
-        "description": """An object made from an alloy—a deliberate mixture of two or more metals—to create a new material with enhanced properties like greater hardness or a lower melting point. The most significant archaeological alloys are bronze (copper mixed with tin) and brass (copper mixed with zinc).""",
-        "era": """The development of bronze around 3300 BCE was so revolutionary that it gave its name to an entire epoch: the Bronze Age. This period marks a pivotal moment when societies moved beyond stone to create the first high-performance artificial material.""",
-        "material": """Bronze was the primary alloy of antiquity. Adding about 10% tin to copper creates a metal that is significantly harder and easier to cast. Arsenical copper was an early form of bronze. Brass became more common in the Roman period. Electrum, a natural alloy of gold and silver, was used for the first coins.""",
-        "significance": """The ability to create alloys demonstrates a profound understanding of metallurgy. Bronze enabled the creation of superior tools (stronger axes) and weapons (durable swords) that gave their owners a significant advantage. This technological superiority is a hallmark of complex societies.""",
-        "cultural_context": """The Bronze Age revolution was a global phenomenon, occurring independently in the Near East, the Aegean, the Indus Valley, and China. Because the key ingredients, copper and especially tin, are rarely found together, the production of bronze fueled the creation of vast international trade networks.""",
-        "technological_markers": """Advanced metallurgical skills were required. Smelting was the process of extracting metal from its ore. Lost-wax casting (cire perdue) was a sophisticated technique for creating complex, hollow shapes. Hammering and annealing (heating and slow cooling) were used to shape and harden the metal."""
-    },
-    "Blackstone": {
-        "description": """This category refers to artifacts carved from dense, dark, fine-grained rocks like basalt, schist, or steatite (soapstone). The fine grain of these stones allows for the carving of incredibly intricate details and a high polish. Artifacts include statues, architectural elements, and inscribed steles like the Rosetta Stone.""",
-        "era": """Blackstone was used in many periods but is particularly characteristic of certain powerful dynasties. It was a favored material in Ancient Egypt and for the inscribed law codes of Mesopotamia. The art of blackstone sculpture reached a zenith in Eastern India under the Pala and Sena dynasties (c. 750-1200 AD).""",
-        "material": """Basalt and diorite are hard, durable volcanic rocks capable of taking a very high polish. Schist is a metamorphic rock that is slightly softer and easier to carve, making it ideal for extremely detailed sculptures. The choice of dark stone was often symbolic, representing eternity or fertility.""",
-        "significance": """The durability of blackstone made it the ideal medium for creating eternal images of deities and for recording permanent laws and histories. The Code of Hammurabi, one of the world's oldest deciphered law codes, is famously carved onto a tall basalt stele. Geochemical analysis of the stone can trace it back to its specific quarry.""",
-        "cultural_context": """In Egypt, the color black was associated with Osiris, the god of the afterlife, and the fertile black silt of the Nile River. In Mesopotamia, it conveyed timeless authority. The Pala Empire, centered in Bengal and Bihar, was a major center of Mahayana Buddhism and produced countless intricate sculptures of Buddhas and Bodhisattvas from black schist.""",
-        "technological_markers": """The process began with quarrying massive blocks of stone. The intricate details were achieved by carving with hardened metal chisels and drills. The final stage involved laborious abrasive polishing, using sand and water to rub the surface until it achieved a deep, glossy finish."""
-    },
-    "vatta_sillu": {
-        "description": """A vatta sillu or Ammi Kallu is a traditional grinding stone set, fundamental to South Indian and Southeast Asian kitchens. It consists of a large, flat stone slab (ammi) and a smaller, cylindrical rolling pestle (kuzhavi or muller), used to grind ingredients into fine pastes.""",
-        "era": """Simple grinding stones (saddle querns) appeared in the Neolithic period with the advent of agriculture. This specific flat-bed form has been a staple in South Asian domestic settings for centuries, representing a long, continuous culinary tradition.""",
-        "material": """The stones are made from hard, coarse-grained rock, typically granite or sandstone. The coarse texture is essential as it provides the necessary friction and abrasive surface to efficiently break down ingredients.""",
-        "significance": """This tool is a key indicator of culinary traditions based on freshly ground spices and wet batters. Unlike a mortar and pestle (for pounding), the ammi kallu is for grinding, essential for making the smooth masala pastes for many South Indian curries and batters for dishes like dosa and idli.""",
-        "cultural_context": """The ammi kallu is the heart of the traditional South Indian kitchen, located here in Tamil Nadu. The rhythmic sound of grinding is an iconic part of domestic life. It also plays a role in rituals, sometimes worshipped as a household deity or used in wedding ceremonies as a symbol of stability.""",
-        "technological_markers": """The technology lies in shaping the hard stone. The flat slab's surface was often prepared by pecking it with a harder stone to create a rough, effective grinding surface. This pecking would be repeated periodically as the stone became smooth with use. The muller was shaped to be ergonomic for a comfortable grip."""
-    },
-    "pottery": {
-        "description": """Pottery refers to any object made from clay that has been hardened by firing. As one of the most common and durable artifacts, it includes everything from simple cooking pots and large storage jars to highly decorated ceremonial vessels.""",
-        "era": """The invention of pottery is a key feature of the Neolithic period (c. 10,000 BCE). It marks a fundamental shift towards more sedentary lifestyles, as pottery is heavy and fragile, making it unsuitable for nomadic groups.""",
-        "material": """The base material is clay. Potters often add a tempering agent (or 'grog') to the clay, such as sand, crushed shell, or even crushed old pottery, to reduce shrinkage and prevent the pot from cracking during the high heat of firing.""",
-        "significance": """Pottery is an archaeologist's best friend. Styles of pottery change relatively quickly over time, making ceramic fragments (sherds) a primary tool for dating archaeological sites (a method called seriation). The shape of a pot reveals its function. Chemical residue analysis can reveal what people were eating and drinking.""",
-        "cultural_context": """Every culture has its distinctive pottery traditions, from the cord-marked Jōmon pottery of Japan to the narrative scenes on Greek black-figure and red-figure vases. Major technological leaps, like the invention of the potter's wheel and high-temperature kilns, are markers of increasing social complexity.""",
-        "technological_markers": """Early pottery was hand-built using techniques like pinching, coiling (building the walls with long ropes of clay), or slab-building. The invention of the potter's wheel revolutionized production. Surface treatments included burnishing (polishing), applying a clay slip (a liquid clay coating), or decorating with paint before firing in a kiln or a simple pit fire."""
-    }
+    "description": """This category encompasses the entire technological evolution of tools designed for the pursuit, capture, and processing of game, from the most rudimentary sharp flakes to highly specialized projectile systems. The foundational technology began with the Oldowan industry, featuring simple choppers and sharp flakes that could cut through hide and slice meat from bone. This was superseded by the iconic, symmetrical Acheulean hand-axe, a multi-purpose tool for butchering, digging, and smashing bone marrow. The Middle Paleolithic witnessed a shift towards prepared-core techniques, producing specialized points, scrapers, and knives. The Upper Paleolithic revolution introduced composite technology, where microliths were inset into wooden or bone handles to create efficient barbed spears and harpoons, culminating in the invention of the atlatl and bow, which fundamentally changed the dynamics of hunting by increasing range, force, and safety.""",
+    "era": """The chronology of hunting technology is a direct narrative of human cognitive and cultural development. The Lower Paleolithic, spanning from approximately 2.6 million years ago to 300,000 years ago, is dominated by the Oldowan and Acheulean traditions, primarily associated with Homo habilis and Homo erectus. The Middle Paleolithic (c. 300,000–40,000 years ago) is defined by the Levallois prepared-core technique and the Mousterian tool complex, strongly linked to both Neanderthals and early Homo sapiens. The Upper Paleolithic (c. 50,000–12,000 years ago) marks an explosion of innovation, with the emergence of blade-based technology, pressure flaking, and the first mechanical weapon systems like the spear-thrower. The Mesolithic period saw the refinement of the bow and arrow and an increased use of microliths, adaptations to a changing post-glacial environment and new prey species.""",
+    "material": """Material selection was a critical decision, dictated by availability, workability, and functional requirement. The premier materials for cutting edges were cryptocrystalline stones like flint, chert, and obsidian, which fracture in a predictable conchoidal pattern to produce edges sharper than surgical steel. Softer stones like sandstone and limestone were used as hammerstones and grinding platforms. With the Upper Paleolithic, organic materials became equally important; antler was used for soft hammers in knapping and for points, bone was carved into awls, needles, and spearheads, and wood was essential for shafts, handles, and bows. The development of adhesives, such as birch bark tar, was crucial for hafting stone points to their wooden handles, creating a stronger, more lethal composite tool.""",
+    "significance": """Hunting tools are a primary proxy for understanding hominin cognition, subsistence strategies, and social organization. The standardization of tool forms over vast geographical and temporal scales implies advanced cognitive capacities, including mental template planning, complex language for teaching, and cultural transmission. Butchery marks on fossil bones allow archaeologists to distinguish between hunting and scavenging behaviors and to reconstruct Pleistocene food webs. The technological leap to projectile weapons likely influenced social structure, enabling more cooperative hunting strategies and the division of labor. Furthermore, the spread of specific point styles, like the Solutrean points in Europe or the Clovis points in the Americas, provides critical evidence for tracing human migration routes and cultural interaction.""",
+    "cultural_context": """Specific toolkits are the cultural fingerprints of different hominin species and populations. The crude Oldowan tools are the signature of Homo habilis, the first major toolmakers. The pervasive Acheulean hand-axe is synonymous with the global migrations of Homo erectus. The sophisticated Mousterian industry, with its Levallois technique, is a hallmark of Neanderthal adaptability and intelligence. The dramatic technological and artistic explosion of the Upper Paleolithic, characterized by blade technology, boneworking, and art, is inextricably linked to Homo sapiens. These tools are not just implements for survival but are embedded in the cultural identity and technological prowess of the groups that made and used them.""",
+    "technological_markers": """The manufacturing process, known as knapping or lithic reduction, involves a series of sophisticated techniques. Percussion flaking uses a hammerstone (hard hammer) or a billet of wood or antler (soft hammer) to strike flakes from a core. Pressure flaking, a more advanced and controlled method, uses a pointed tool of bone or antler to press small, precise flakes off a pre-formed edge, allowing for final shaping and sharpening. The Levallois technique represents a cognitive leap, where the core is meticulously prepared so that a single, predeterminated flake of a specific shape can be struck off. Heat treatment of stone to improve its flaking quality is another advanced technological marker. Finally, hafting—the combination of stone, wood, bone, and adhesive—represents the pinnacle of Paleolithic engineering, creating tools far more effective than the sum of their parts."""
+},
+
+"Kendi": {
+    "description": """A Kendi is a highly distinctive vessel form native to Southeast Asia, characterized by its lack of a handle and its unique two-orifice design: a central neck or opening for filling, and a separate, often mammiform (breast-shaped), spout for pouring. This ingenious design allows liquid to be consumed by pouring it directly into the mouth without the lips touching the vessel itself, promoting hygiene and making it ideal for communal drinking and ceremonial use. The body is typically globular or bulbous, providing a stable base and a large internal volume. The spout is its defining feature, ranging from a simple tapered tube to an elaborately modeled breast form, often symbolizing fertility and abundance. This form is so culturally specific that it serves as an unmistakable indicator of Southeast Asian influence and trade across the ancient world.""",
+    "era": """The Kendi's development and proliferation are deeply tied to the rise of maritime trading empires in Southeast Asia. Its precursors appear as early as the first millennium CE, but it became a widespread and highly traded item during the era of the Srivijayan Empire (7th to 13th centuries), which controlled the strategic Straits of Malacca. Its production and artistic refinement peaked during the zenith of the Majapahit Empire in Java (13th to 16th centuries), where it became a common grave good and ritual object. Concurrently, major ceramic centers in Sukhothai and Sawankhalok (Thailand) and in Vietnam began mass-producing Kendis for both domestic use and export. The form remained popular into the early modern period, with Chinese kilns at Jingdezhen producing exquisite blue-and-white porcelain versions specifically for the Southeast Asian market.""",
+    "material": """Kendis were produced in a vast range of materials, reflecting their use across all levels of society. For everyday domestic use, they were fashioned from earthenware or local stoneware. The most archaeologically significant are the high-fired stoneware Kendis from Thai and Vietnamese kilns, often coated in beautiful celadon glazes ranging from olive-green to sea-green. Chinese export porcelain Kendis represent the height of luxury, featuring underglaze blue paintings of floral and geometric motifs. For the elite and for temple use, Kendis were crafted from precious metals like silver and gold, or from bronze, demonstrating their high status. The choice of material directly correlates to the wealth of the owner and the ritual importance of the vessel's function.""",
+    "significance": """The Kendi is far more than a simple water vessel; it is a key artifact for understanding pre-modern trade and cultural exchange. Its distribution maps the extent of the Maritime Silk Road, with finds from shipwrecks and archaeological sites stretching from Japan and the Philippines to Egypt and Turkey. As a ritual object, it held profound importance in Hindu-Buddhist ceremonies across Southeast Asia, used for storing and pouring holy water (tirta) during purification rites, consecrations, and other religious observances. Its presence in a burial context signifies beliefs in the afterlife, where the deceased would need vessels for ritual purification. The Kendi is thus a symbol of both earthly trade and spiritual devotion.""",
+    "cultural_context": """The Kendi is deeply embedded in the cultural and religious fabric of Southeast Asia. It is frequently depicted in the bas-reliefs of ancient temples, such as the famous Borobudur in Java, illustrating its use in daily life and courtly ceremony. In traditional Indonesian and Malay culture, the Kendi was a common feature in households and was used in various life-cycle rituals. Its hygienic principle aligns with cultural practices emphasizing purity. The mammiform spout carries strong associations with fertility and the divine feminine, linking the vessel to ancient animist beliefs that were syncretized with later Hindu-Buddhist traditions. It stands as a powerful cultural icon of the region's innovative artistry and its complex spiritual history.""",
+    "technological_markers": """The production of ceramic Kendis required a high degree of technological expertise. Wheel-throwing was the primary forming method, demanding great skill to create the symmetrical body and seamlessly attach the spout and neck. The application of vitreous glazes, particularly the coveted celadon, required precise control of the kiln atmosphere (reduction firing) to achieve the desired color and finish. Firing to stoneware temperatures (often exceeding 1200°C) necessitated the construction of sophisticated updraft or cross-draft kilns, like the massive dragon kilns of Vietnam and China. The production of metal Kendis involved advanced metallurgy, including lost-wax casting for bronze and intricate repoussé and chasing work for silver and gold examples, showcasing the mastery of multiple material technologies."""
+},
+
+"Thakli": {
+    "description": """A Thakli, more universally known as a drop spindle, is a deceptively simple tool used for the ancient craft of spinning fibers into yarn or thread. It consists of two basic components: a shaft (spindle stick) and a whorl, a weight attached to the shaft that acts as a flywheel to maintain momentum. The spinner sets the spindle in motion by twisting the shaft and then lets it hang suspended, drafting out fibers with their hands while the rotating spindle imparts the twist, transforming loose fiber into a continuous, strong thread. The finished thread is then wound around the shaft itself for storage. This tool represents one of the most fundamental and transformative inventions in human history, enabling the creation of textile fabrics.""",
+    "era": """The spindle whorl is a ubiquitous find in archaeological sites across the globe from the Neolithic period onward, marking the adoption of fiber technology and settled life. In the Indian subcontinent, evidence for spinning is ancient and robust; terracotta spindle whorls have been excavated from major sites of the Indus Valley Civilization, such as Harappa and Mohenjo-daro, dating back to 2500 BCE, indicating a highly developed cotton textile industry. The design of the drop spindle has seen remarkably little change over millennia, a testament to its perfect efficiency. Its use persisted as the primary spinning tool until it was gradually supplemented, though never fully replaced, by the spinning wheel (Charkha) in the medieval period, which increased production speed but required a seated, stationary operator.""",
+    "material": """The archaeological record is biased towards durable materials, so while the wooden or bamboo spindle shaft almost never survives, the whorl is commonly found. Whorls were made from a wide variety of materials depending on availability and status. The most common were inexpensive, locally sourced materials like fired clay (terracotta), stone, or bone. These could be easily shaped and were often decorated with incised patterns. More valuable whorls, indicating wealth or special significance, were made from exotic materials, precious metals, or intricately carved ivory. The choice of material for the whorl affected its weight and moment of inertia, which in turn influenced the thickness and twist of the yarn being spun.""",
+    "significance": """The discovery of a spindle whorl at an archaeological site is a direct indicator of a complex chain of technological and economic activities. It implies the prior steps of fiber production: either the cultivation of plants like cotton, flax, or hemp, or the domestication and shearing of animals like sheep or goats for their wool. It points forward to the subsequent technology of weaving on looms to produce cloth. Textiles were one of the most important commodities in ancient economies, used for clothing, sailcloth, sacks, and trade. Therefore, the humble Thakli is a key piece of evidence for understanding a society's level of agricultural development, craft specialization, and participation in local and long-distance trade networks.""",
+    "cultural_context": """In India, the spindle is deeply intertwined with both ancient economic history and modern political symbolism. The Indus Valley Civilization's prowess in cotton spinning and weaving was legendary and formed a basis for its trade with Mesopotamia. Centuries later, during the Indian independence movement, Mahatma Gandhi revitalized the spinning wheel (Charkha) as a powerful symbol of economic self-sufficiency (Swadeshi) and peaceful resistance to British colonial rule that had crippled India's native textile industries. The act of spinning became a daily ritual for millions, making the tool an icon of national pride and self-reliance. The Thakli thus connects the artisans of the ancient world to the freedom fighters of the modern era.""",
+    "technological_markers": """The technology of the drop spindle is a masterclass in applied physics. The whorl must be centrally perforated and perfectly balanced to spin smoothly without wobbling, which would break the thread. The weight and diameter of the whorl are carefully matched to the type of fiber being spun: a heavier whorl provides more inertia for spinning thick, coarse yarns, while a lighter whorl is used for delicate, fine threads like silk. The shaft must be straight, smooth, and tapered to facilitate the winding of the finished yarn. The spinner's skill lies in coordinating the drafting of the fibers with the falling motion and rotation of the spindle, a knowledge passed down through generations."""
+},
+
+"shell bangle": {
+    "description": """Shell bangles are rigid, ring-shaped bracelets meticulously crafted from the thick, robust whorls of large marine gastropods, primarily the sacred conch shell (Turbinella pyrum). Unlike bracelets made from multiple beads strung together, these are single, continuous circles of shell, requiring immense skill to produce from a brittle material without fracture. The manufacturing process involved cutting a rough ring from the body whorl of the shell and then grinding and polishing it into its final smooth, circular form. These were not mere ornaments but potent symbols of identity, wealth, and ritual status, worn in multiples on the wrist. Their presence far inland is a definitive marker of long-distance trade and cultural value.""",
+    "era": """The production of shell bangles on an industrial scale is a defining characteristic of the Indus Valley Civilization (Harappan Culture), which flourished from approximately 2600 to 1900 BCE. While shell ornaments date back to the Paleolithic, the Harappans systematized their production into a specialized, large-scale craft industry. This tradition did not disappear with the decline of the Indus cities; it persisted into later historical periods across the Indian subcontinent. The cultural practice of wearing conch shell bangles, particularly by married women in regions like Bengal and Odisha, continues to this day, representing an unbroken tradition stretching back over 4,000 years, making it one of the world's longest-lasting cultural artifacts.""",
+    "material": """The material of choice was almost exclusively the sacred chank or conch shell, Turbinella pyrum, prized for its thick, sturdy walls, pure white color, and deep religious significance. These shells were sourced from the sea, specifically the coasts of modern-day Gujarat, Pakistan, and Sri Lanka. The procurement of the raw material was itself a specialized activity, involving maritime communities. The finished product—the white bangle—was often paired with bangles made from other materials, most notably red-red terracotta, lac, or coral, creating a symbolic contrast of white and red that held profound meaning related to life, marriage, and fertility. The shell's origin from the ocean also connected it to concepts of purity and the source of life.""",
+    "significance": """Shell bangles are critical artifacts for understanding Harappan economics, social structure, and trade. The existence of dedicated workshops at coastal sites like Nageshwar and Balakot, complete with unfinished blanks, manufacturing debris, and finished products, indicates craft specialization and organized production for distribution. The transport of these delicate, finished goods to major urban centers hundreds of kilometers inland, such as Mohenjo-daro and Harappa, provides clear evidence of a sophisticated internal trade network. Furthermore, they were clear markers of social status; the quantity and quality of bangles a person wore likely indicated their wealth, ethnicity, or marital status. They are a key diagnostic artifact for identifying the extent of Indus influence and trade.""",
+    "cultural_context": """The conch shell (Shankha) holds an exalted position in Hindu mythology and ritual, being one of the primary attributes of the god Vishnu. Its sound is believed to purify the environment and vanquish evil. In this context, bangles made from the shell are imbued with protective and purifying properties. In modern Hindu practice, particularly in eastern India, a married woman's wearing of white conch shell bangles (Shankha) paired with red lac bangles (Pala) is an essential symbol of her suhag (marital bliss) and the long life of her husband. This modern ritual is a direct cultural descendant of the Harappan tradition, seamlessly linking the archaeology of the Indus Valley to the lived practices of contemporary South Asia.""",
+    "technological_markers": """The manufacturing process was a complex, multi-stage operation requiring expert knowledge. It began with cutting the apex of the shell to create a flat working surface. Then, using a bronze saw with a likely abrasive slurry (sand and water), craftspeople would carefully cut concentric circles out of the shell's body whorl to create rough, tubular blanks. These rough rings were then ground into a smooth, round shape using stone abraders. The final stage involved polishing the bangle to a high, lustrous shine, probably using a fine abrasive paste or cloth. This process, from a whole shell to a perfect ring, demonstrates a sophisticated understanding of material properties and advanced lapidary skills."""
+},
+
+"Bead Jewellery": {
+    "description": """Bead jewellery encompasses all adornments created by stringing together small, perforated objects, forming necklaces, bracelets, anklets, girdles, and elaborate collars. As one of the oldest forms of human expression, beads served functions far beyond decoration, acting as markers of identity, status, wealth, and belief. The technology to create beads evolved from simple stringing of natural objects like shells and seeds to the highly sophisticated working of the hardest stones and the invention of synthetic materials like faience and glass. The variety of forms is immense, including simple spherical beads, long barrels, bicones, discs, and fantastically shaped etched beads. The study of beads provides a microscopic view into trade, technology, and aesthetic values of ancient societies.""",
+    "era": """The history of beads is as long as the history of modern humans. The earliest known beads, made from Nassarius snail shells with deliberate perforations, date back over 100,000 years to the Middle Stone Age, associated with early Homo sapiens in Africa and the Near East. The Neolithic period saw an expansion in materials and styles alongside sedentism. The Bronze Age (3rd millennium BCE) represents a golden age of bead making, with the Indus Valley Civilization producing long, barrel-shaped carnelian beads and Egypt crafting intricate faience broadcollars. The Iron Age and Classical periods saw the perfection of glass bead making, particularly by the Romans and later by Venetian artisans, a tradition that continues to the present day.""",
+    "material": """The materials used for beads form a hierarchy of value and technological complexity. Common materials included baked clay (terracotta), bone, ivory, and shell. Hardstones were highly valued for their color and durability; these included deep red carnelian, banded agate, green feldspar, brilliant blue lapis lazuli, and deep green turquoise. The most precious materials were metals, particularly gold and silver. Perhaps the most significant technological innovations were the development of synthetic materials: Egyptian faience (a quartz-based glazed ceramic) and glass. Both involved pyrotechnology and chemical knowledge to create vibrant, man-made colors that imitated precious stones.""",
+    "significance": """Beads are unparalleled indicators of long-distance trade and cultural interaction. Because raw materials like lapis lazuli (only from Afghanistan), turquoise (from the Sinai Peninsula), and amber (from the Baltic) have highly specific geological sources, their presence in archaeological sites far from their origin provides irrefutable evidence of vast trade networks. The "Treasures of the Queen" in the Royal Cemetery of Ur contained beads from the Indus Valley, demonstrating trade between Mesopotamia and the Indus civilization around 2500 BCE. Residue analysis on beads can reveal the types of stringing materials used (sinew, flax, cotton) and even the presence of perfumes or oils. They are tiny time capsules of economic and social information.""",
+    "cultural_context": """Beads are a universal language of adornment, but each culture developed distinct styles. The Harappans were renowned for their exceptionally long carnelian beads, achieved through a complex etching and heat treatment process. The famous 'Dancing Girl' statue from Mohenjo-daro wears a stack of bangles on one arm, showcasing the importance of personal adornment. In ancient Egypt, beaded broadcollars were essential items of funerary equipment, believed to protect the deceased, with Tutankhamun's tomb containing multiple magnificent examples. In many African and Native American cultures, beadwork patterns are a form of communication, denoting tribal affiliation, social status, and personal history. Beads are deeply woven into the social and spiritual fabric of humanity.""",
+    "technological_markers": """The production of beads required a suite of advanced technologies. For hardstone beads, the primary technology was drilling. Craftsmen used bow-driven drills tipped with hardened stone (like emery) or copper points, often with an abrasive sand slurry, to perforate incredibly hard materials. Shaping was done by grinding against stone abraders. The etching of white patterns on carnelian beads involved painting a alkali solution onto the stone and then heat-treating it. Faience production involved crushing quartz, molding it, and then firing it with a glaze that would vitrify on the surface. Glassmaking required furnaces capable of reaching very high temperatures to melt silica sand and flux, and the knowledge to add mineral-based colorants. Each material demanded a unique and sophisticated technological knowledge."""
+},
+
+"alloy": {
+    "description": """An alloy is a material composed of two or more metallic elements, intentionally combined to create a new substance with properties superior to those of its individual components. The most historically significant alloys are bronze (copper and tin) and brass (copper and zinc), whose development revolutionized toolmaking, warfare, and art. The creation of an alloy is a deliberate act of applied chemistry, requiring knowledge of ores, smelting, and the effects of mixing metals. Alloys can be engineered for specific traits: bronze is harder and casts better than pure copper, while brass is more malleable and has a gold-like appearance. The shift from stone to metal alloys marks one of the most significant technological transitions in human history, giving its name to the Bronze Age.""",
+    "era": """The development of alloy technology was a pivotal moment in human history. The first steps involved the use of native copper and the simple smelting of copper ores, a process known in the Neolithic period. The true Bronze Age began around 3300 BCE in the Near East (Mesopotamia and Anatolia) when tin was systematically added to copper to create true bronze. This technological revolution spread to the Aegean (by 3000 BCE), the Indus Valley (by 2500 BCE), and China (by 2000 BCE), occurring independently in the Andes. The Iron Age gradually superseded the Bronze Age from around 1200 BCE, not because iron was superior to bronze (initially, it was not), but because iron ore was far more common and widespread than the rare tin required for bronze.""",
+    "material": """The primary alloy of antiquity was bronze, typically composed of 90% copper and 10% tin. However, the scarcity of tin led to the use of arsenic to create an earlier, more toxic form known as arsenical bronze. Brass, an alloy of copper and zinc, became more common during the Roman Empire. Other important alloys include pewter (tin and lead), used for tableware, and electrum, a naturally occurring alloy of gold and silver that was used for the first coins in Lydia (modern Turkey). The specific composition of an alloy can be determined through techniques like X-ray fluorescence (XRF) analysis, which can trace the source of the metals and reveal trade connections.""",
+    "significance": """The invention of bronze had a transformative impact on society. It enabled the creation of tools that were vastly superior to stone: harder, more durable, and capable of being resharpened and recycled. Bronze weapons—swords, spearheads, and armor—provided military advantages that contributed to the rise of powerful, warrior-led states and empires. The value of bronze and the specialized knowledge required to produce it led to the emergence of a class of full-time metal smiths. Furthermore, because copper and tin sources are geographically limited and rarely found together, the Bronze Age economy was inherently international, fueling complex and extensive trade networks across Europe and Asia that were vulnerable to disruption.""",
+    "cultural_context": """The Bronze Age was the first truly globalized era, connecting disparate cultures through the demand for metal. The quest for tin and copper created interdependencies between regions like Mesopotamia, Anatolia, the Aegean, and even distant Britain (a source of tin). This is reflected in the archaeological record through the spread of not only metal objects but also associated technologies, artistic styles, and ideas. The possession of bronze objects became a key signifier of elite status and power. The mythological significance of metalworking is evident in many cultures, where smiths were often accorded a semi-magical status, as seen in the figure of Hephaestus in Greek mythology or Vishwakarma in Hinduism.""",
+    "technological_markers": """Alloy production involved a complex chain of sophisticated technologies. It began with mining, often in deep shafts, to extract copper and tin ores. Smelting used furnaces capable of reaching temperatures over 1000°C to reduce the metal from its ore. The purified metals were then melted together in crucibles in precise ratios to create the alloy. The primary method for shaping objects was casting, using single-piece stone molds for simple objects or the highly advanced lost-wax (cire perdue) method for complex, sculptural pieces like the famous "Dancing Girl" from Mohenjo-daro. Subsequent cold-working and annealing (heating and hammering) were used to harden and strengthen the finished object."""
+},
+
+"Blackstone": {
+    "description": """This category refers to artifacts masterfully carved from dense, fine-grained, dark-colored stones such as basalt, dolerite, schist, and steatite (soapstone). These materials are prized for their ability to hold intricate detail and achieve a deep, lustrous polish that conveys permanence and grandeur. Artifacts range from monumental sculpture and imposing architectural elements to inscribed steles bearing laws and decrees. The choice of a dark, often black, stone was frequently symbolic, associated with eternity, the underworld, or fertile earth. Working these hard stones required exceptional skill, patience, and specialized tools, making such objects statements of power and devotion.""",
+    "era": """The use of blackstone for significant artifacts spans millennia and continents. It was employed in Ancient Egypt for statues of pharaohs and gods, such as the famous diorite statue of Khafre. In Mesopotamia, it was the material of choice for recording laws for posterity, exemplified by the Code of Hammurabi (c. 1750 BCE), carved on a tall basalt stele. In the Indian subcontinent, the tradition reached an aesthetic zenith during the Pala and Sena dynasties (c. 8th-12th centuries CE) in the eastern regions of Bengal and Bihar, where black schist and basalt were used to create some of the most refined and exquisite sculptures in Buddhist and Hindu art. The tradition continues in modern times for temple icons and decorative items.""",
+    "material": """The specific choice of stone depended on the desired effect and available resources. Basalt and dolerite are extremely hard, igneous rocks that are difficult to work but yield a superb, durable polish, ideal for outdoor monuments. Schist is a metamorphic rock that is softer and more fissile, allowing sculptors to carve incredibly fine details, delicate jewelry, and flowing drapery, but it is less durable outdoors. Steatite, or soapstone, is the softest of these materials, easily carved with even simple tools and often used for smaller objects, seals, and preliminary models for larger works. The color palette ranges from deep black and grey to greenish-black and dark blue, all conveying a sense of solemnity and weight.""",
+    "significance": """Blackstone artifacts were intended to last for eternity, serving as permanent records of divine power, royal authority, and legal order. The durability of the material made it ideal for inscribed law codes, like Hammurabi's, which were meant to be immutable and publicly displayed. In a religious context, a polished black stone statue of a deity was believed to be a permanent vessel for the divine presence, aniconic and eternal. For archaeologists and art historians, the geological sourcing of the stone through petrographic analysis can reveal ancient quarrying sites and trade routes. The style and iconography of the carving provide a chronology for artistic development and cultural influence.""",
+    "cultural_context": """The cultural meaning of blackstone varied by region but was consistently associated with power and the sacred. In Egypt, the black color was linked to the fertile black silt of the Nile (Kemet, "the black land") and to Osiris, god of the afterlife and resurrection, making it an appropriate material for funerary and divine statues. In Mesopotamia, its use for law steles conveyed the timeless and unwavering nature of the king's justice. In the Pala Empire, a major center of Mahayana Buddhism, the use of black schist for sculptures of compassionate Bodhisattvas like Avalokiteshvara and Tara created a striking visual contrast between the dark stone and the serene, gentle expressions of the deities, enhancing their spiritual impact. This cultural context elevates these objects from mere stone to embodiments of belief and power.""",
+    "technological_markers": """Creating a finished blackstone sculpture was a labor-intensive process involving multiple stages and high levels of expertise. It began at the quarry, where large blocks were extracted using stone hammers, wood wedges, and water. The initial roughing out of the shape was done by skilled craftsmen using pointed and chisel-ended tools made of a metal harder than the stone (e.g., bronze or iron chisels for softer stones, hardened steel for basalt). The intricate detailing was achieved with finer tools and drills. The final and most time-consuming stage was polishing, achieved by rubbing the surface with progressively finer abrasives (e.g., sand, emery powder, leather) often with water, until the stone achieved a mirror-like, reflective gloss that brought out its color and depth."""
+},
+
+"vatta_sillu": {
+    "description": """The Vatta Sillu, more commonly known as an Ammi Kallu or grinding stone, is a fundamental dual-piece tool central to traditional South Indian and Sri Lankan domestic life. It consists of a large, flat, rectangular or oval stone slab (the Ammi) which serves as the base, and a smaller, cylindrical stone roller (the Kuzhavi or Muller) used to crush, grind, and pulverize ingredients. Unlike a Western mortar and pestle which is used for pounding, the Ammi Kallu is designed for a back-and-forth grinding motion, which is essential for creating the smooth, wet pastes and batters that are the foundation of the region's cuisine. It is the undisputed heart of the traditional kitchen, a tool of daily ritual and immense practical importance.""",
+    "era": """The basic technology of the grinding slab is Neolithic in origin, appearing with the advent of agriculture for processing grains. The saddle quern, a concave base stone with a rocking handstone, was a common prehistoric form. The specific flat-bed design of the South Indian Ammi Kallu represents a regional evolution of this ancient technology, perfected over centuries to suit the particular culinary needs of the region. Its use is documented over many centuries and it remains in use in countless households and traditional food preparation units today, representing a living archaeological tradition that connects the present directly to the ancient past.""",
+    "material": """The tool is almost exclusively made from stone, chosen for its hardness and abrasive quality. The most common material is granite, due to its widespread availability, incredible durability, and coarse-grained texture which provides the necessary friction for efficient grinding. Sandstone is also used, particularly in regions where it is more readily available. The choice of stone is crucial; it must be hard enough to not wear away too quickly, but have a grain structure that acts as a natural abrasive. The stone is always left unglazed and untreated, as its rough, porous surface is essential to its function.""",
+    "significance": """The Ammi Kallu is a key technological indicator of a specific culinary tradition based on freshly ground spices and fermented batters. Its presence signifies a cuisine that requires fine pastes for curries (e.g., wet masalas) and smooth, aerated batters for staples like dosa, idli, and adai. This is in contrast to cuisines that use dry spices or pounding techniques. Archaeologically, finding a stone with a worn, smooth surface from years of grinding provides direct evidence of food preparation activities at a site. It represents a technology that is entirely mechanical, requiring no power source other than human energy, and embodies a slow, rhythmic method of cooking that is deeply connected to cultural identity.""",
+    "cultural_context": """In a South Indian context, particularly in Tamil Nadu, the Ammi Kallu is more than a tool; it is a cultural icon. The rhythmic sound of grinding is a classic and comforting sound of home and domestic life. Its importance is reflected in its role in rituals; it is sometimes personified and worshipped as a household deity. In Tamil Brahmin weddings, the groom is often shown the Ammi by the bride's family as a symbol of the grinding away of life's difficulties and the stability of the household. This deep cultural embedding makes it a powerful symbol of tradition, family, and the enduring nature of regional culinary practices in the face of modern appliances like electric grinders.""",
+    "technological_markers": """The technology lies in the quarrying, shaping, and maintenance of the stone. The large slab was likely shaped by pecking—repeatedly striking it with a harder hammerstone to fracture and remove small pieces until a flat surface was achieved. The roller was shaped into a comfortable, ergonomic cylinder. The critical technological process is the preparation and maintenance of the grinding surface. Over time, the surface becomes smooth and less effective. To restore its abrasive quality, users periodically re-peck the surface of the Ammi with a pointed tool, creating a fresh, rough texture. This cycle of use, wear, and re-pecking is the fundamental technological marker of this tool's long lifecycle."""
+},
+
+"pottery": {
+    "description": """Pottery refers to objects—primarily vessels—formed from clay and hardened by heat. It is one of the most common and informative classes of artifacts found by archaeologists. The category encompasses a vast range of items, from simple, undecorated cooking pots and bulky storage jars to finely made, elaborately painted tableware and ritual vessels. The invention of pottery represents a fundamental shift in human technology, enabling the efficient storage, cooking, and transport of food and liquids. Its fragility and weight make it strongly associated with sedentary, rather than nomadic, lifestyles. The study of pottery (ceramic analysis) is a cornerstone of archaeology.""",
+    "era": """The development of pottery is a hallmark of the Neolithic period, beginning around 10,000 BCE in East Asia (Japan's Jomon culture) and later appearing independently in the Near East, Africa, and the Americas. The earliest forms were simple, hand-built vessels fired in open bonfires. The invention of the potter's wheel in Mesopotamia around 3500 BCE was a major revolution, enabling faster, more standardized production. The subsequent development of kilns capable of reaching higher and more controlled temperatures led to advanced ceramics like stoneware and, eventually, porcelain in China. Pottery styles change rapidly, making them the primary tool for archaeologists to date sites (seriation) and trace cultural interactions.""",
+    "material": """The primary material is clay, a naturally occurring alumina-silicate that becomes plastic when wet and hard when fired. Potters rarely use pure clay; they add non-plastic materials called temper (or grit) to the clay body to prevent excessive shrinkage and cracking during drying and firing. Common tempering materials include sand, crushed shell, crushed rock, and even crushed pottery (grog). The choice of clay and temper is often locally specific. The surface could be left plain, smoothed (burnished), or covered with a slip (a fine clay suspension) for color and smoothness. Glazes, a glassy coating, were a later invention requiring knowledge of chemistry and high-temperature firing.""",
+    "significance": """Pottery is invaluable to archaeologists. Its ubiquity and breakability mean it is found in enormous quantities. Because styles of decoration, form, and manufacture change frequently, pottery provides a sensitive relative chronology for dating archaeological layers (a method called seriation). The shape of a pot reveals its function (cooking, storage, serving). Chemical and residue analysis of pottery sherds can detect traces of ancient foods, drinks, and oils, providing direct evidence of diet and trade. The distribution of certain pottery types can map trade routes and cultural influence zones. It is, quite simply, the most important diagnostic tool for understanding past human behavior.""",
+    "cultural_context": """Pottery is a universal technology, but every culture developed distinct styles that serve as ethnic markers. The cord-marked Jomon pots of Japan, the painted black-on-white ware of the Ancestral Puebloans, the narrative scenes on Greek vases, and the exquisite blue-and-white porcelain of China are all instantly recognizable cultural signatures. Pottery was deeply integrated into all aspects of life, from the most mundane cooking pot to the most elaborate funerary urn. It reflects aesthetic values, religious beliefs, and social customs. The level of pottery technology—from hand-building to wheel-throwing to glazing—is also a key indicator of a society's technological complexity and specialization of labor.""",
+    "technological_markers": """The manufacturing process involves several key stages and techniques. Forming methods include hand-building: pinching, coiling (building pots from long ropes of clay), or slab construction. The potter's wheel allowed for faster, symmetrical throwing. Surface treatments include impressing (with cords or stamps), incising (cutting designs into the clay), painting (with iron-based or mineral pigments), and applying slips. The final and most crucial stage is firing. Early firing was done in simple open bonfires. The development of the kiln—an enclosed firing chamber—allowed for control of temperature (reaching over 1000°C), atmosphere (oxidizing for red clays, reducing for grey clays), and the production of advanced ceramics like stoneware and porcelain."""
+}
 }
 
 TIMELINE_ERAS = [
@@ -141,24 +170,25 @@ TIMELINE_ERAS = [
     {"name": "Industrial Revolution", "start": 1760, "end": 1900, "color": "#5e81ac", "description": "A period of major technological and socioeconomic change that began in Great Britain.", "events": [{"year": 1769, "event": "James Watt patents his improved steam engine."}]},
 ]
 
+# --- MODIFIED: Added coordinates to REGIONAL_FINDS and removed hardcoded distance ---
 REGIONAL_FINDS = [
     {
-        "site": "Keezhadi / Keeladi ",
-        "distance": "Approx. 95 km from Rajapalayam",
+        "site": "Keezhadi / Keeladi",
+        "lat": 9.845, "lon": 78.221,
         "significance": "A major Sangam-era (c. 6th century BCE to 1st century CE) urban settlement on the banks of the Vaigai river. The excavations have pushed back the known history of urbanism in Tamil Nadu by several centuries.",
         "key_artifacts": "Tamil-Brahmi inscribed pottery, terracotta figurines, glass beads, shell bangles, brick structures, and evidence of a sophisticated water management system. It showcases a highly literate and advanced society.",
         "link": "https://en.wikipedia.org/wiki/Keeladi_excavation_site"
     },
     {
-        "site": "Adichanallur ",
-        "distance": "Approx. 120 km from Rajapalayam",
+        "site": "Adichanallur",
+        "lat": 8.618, "lon": 77.876,
         "significance": "An extensive Iron Age (c. 900 BCE - 200 BCE) urn-burial site. It's one of the most important archaeological sites in Southern India, providing crucial insights into ancient Tamil burial customs and metallurgy.",
         "key_artifacts": "Innumerable pottery urns containing human skeletons, bronze and iron objects (daggers, swords), gold diadems, and pottery with early Tamil-Brahmi script.",
         "link": "https://en.wikipedia.org/wiki/Adichanallur"
     },
     {
-        "site": "Sittanavasal Cave ",
-        "distance": "Approx. 160 km from Rajapalayam",
+        "site": "Sittanavasal Cave",
+        "lat": 10.463, "lon": 78.736,
         "significance": "A 2nd-century Jain complex of caves. It's famous for its stunning fresco paintings, which are among the most important examples of early Indian mural art, second only to the Ajanta Caves.",
         "key_artifacts": "The cave temple (Arivar Kovil) features beautiful paintings of a lotus pond, dancers, and celestial figures, reflecting the artistic achievements of the Pandyan kingdom.",
         "link": "https://en.wikipedia.org/wiki/Sittanavasal_Cave"
@@ -247,7 +277,7 @@ def predict_all_probs(image_bytes: bytes):
 # ------------------------------
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index_new.html')
 
 @app.route('/predict', methods=['POST', 'HEAD'])
 def predict():
@@ -268,8 +298,12 @@ def predict():
         except UnidentifiedImageError:
             return jsonify({"error": "Invalid image file"}), 400
 
+        print("Image successfully read")
+
         top_k = predict_topk(image_bytes, k=5)
         all_probs = predict_all_probs(image_bytes)
+
+        print("Top-k predictions:", top_k)
 
         chart_filename = f"confidence_chart_{int(time.time())}.png"
         create_confidence_chart(all_probs, chart_filename)
@@ -277,7 +311,8 @@ def predict():
         top1 = top_k[0]
         details = DETAILS_MAP.get(top1["class"], {"description": "No details available"})
 
-        # Add carbon dating data if available
+        print("Details:", details)
+
         c14_data = request.form.get('c14_data')
         if c14_data:
             try:
@@ -293,6 +328,7 @@ def predict():
             "c14_data": c14_data
         })
     except Exception as e:
+        print("Error during prediction:", str(e))
         return jsonify({"error": f"Inference error: {str(e)}"}), 500
 
 @app.route('/calculate_c14_age', methods=['POST'])
@@ -302,12 +338,12 @@ def calculate_c14_age():
 
     if c14_percentage is None or not (0 < c14_percentage <= 100):
         return jsonify({"error": "Invalid C14 percentage. Must be > 0 and <= 100."}), 400
-    
+
     try:
         C14_CONSTANT = 8267
         age_bp = -C14_CONSTANT * math.log(c14_percentage / 100.0)
         calendar_year = 1950 - age_bp
-        
+
         return jsonify({
             'age_bp': round(age_bp),
             'calendar_year': round(calendar_year),
@@ -321,9 +357,30 @@ def get_timeline_eras():
     sorted_eras = sorted(TIMELINE_ERAS, key=lambda x: x['start'])
     return jsonify(sorted_eras)
 
+# --- MODIFIED: The /regional_finds route to handle location data ---
 @app.route('/regional_finds', methods=['GET'])
 def get_regional_finds():
-    return jsonify(REGIONAL_FINDS)
+    user_lat = request.args.get('lat', type=float)
+    user_lon = request.args.get('lon', type=float)
+
+    if user_lat and user_lon:
+        sites_with_distance = []
+        for site in REGIONAL_FINDS:
+            distance = haversine(user_lat, user_lon, site['lat'], site['lon'])
+            
+            site_copy = site.copy()
+            site_copy['distance'] = f"Approx. {round(distance)} km away"
+            sites_with_distance.append(site_copy)
+        
+        sorted_sites = sorted(sites_with_distance, key=lambda item: round(haversine(user_lat, user_lon, item['lat'], item['lon'])))
+        return jsonify(sorted_sites)
+    else:
+        default_sites = []
+        for site in REGIONAL_FINDS:
+            site_copy = site.copy()
+            site_copy['distance'] = "Distance not calculated"
+            default_sites.append(site_copy)
+        return jsonify(default_sites)
 
 @app.route('/generate_pdf', methods=['POST'])
 def generate_pdf():
@@ -332,12 +389,10 @@ def generate_pdf():
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-        # Create a PDF in memory
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
-        
-        # Custom styles
+
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
@@ -345,7 +400,7 @@ def generate_pdf():
             spaceAfter=30,
             alignment=TA_CENTER
         )
-        
+
         heading_style = ParagraphStyle(
             'CustomHeading',
             parent=styles['Heading2'],
@@ -353,7 +408,7 @@ def generate_pdf():
             spaceAfter=12,
             spaceBefore=12
         )
-        
+
         normal_style = ParagraphStyle(
             'CustomNormal',
             parent=styles['BodyText'],
@@ -361,29 +416,48 @@ def generate_pdf():
             spaceAfter=6,
             alignment=TA_JUSTIFY
         )
-        
+
         small_style = ParagraphStyle(
             'CustomSmall',
             parent=styles['BodyText'],
             fontSize=9,
             spaceAfter=4
         )
-        
-        # Story to hold content
+
         story = []
-        
-        # Title
+
         story.append(Paragraph("Archaeological Artifact Analysis Report", title_style))
         story.append(Spacer(1, 20))
-        
-        # Top Prediction
+
+        image_data = data.get('image_data')
+        if image_data:
+            try:
+                if image_data.startswith('data:image'):
+                    image_data = image_data.split(',')[1]
+                
+                img_data = base64.b66decode(image_data)
+                
+                temp_img_path = os.path.join(app.static_folder, f"temp_artifact_{int(time.time())}.png")
+                with open(temp_img_path, 'wb') as f:
+                    f.write(img_data)
+                
+                story.append(Paragraph("Uploaded Artifact Image", heading_style))
+                story.append(Spacer(1, 10))
+                story.append(Image(temp_img_path, width=4*inch, height=3*inch))
+                story.append(Spacer(1, 20))
+
+                import atexit
+                atexit.register(lambda: os.remove(temp_img_path) if os.path.exists(temp_img_path) else None)
+                
+            except Exception as e:
+                print(f"Error processing image: {e}")
+
         top1 = data.get('top1', {})
         if top1:
             story.append(Paragraph(f"Primary Identification: <b>{top1.get('class', 'Unknown')}</b>", heading_style))
             story.append(Paragraph(f"Confidence: {top1.get('probability', 0)*100:.2f}%", normal_style))
             story.append(Spacer(1, 10))
-        
-        # Confidence Chart
+
         chart_url = data.get('chart_url', '')
         if chart_url:
             try:
@@ -392,10 +466,9 @@ def generate_pdf():
                     img = Image(chart_path, width=6*inch, height=4*inch)
                     story.append(img)
                     story.append(Spacer(1, 15))
-            except:
-                pass
-        
-        # Detailed Information
+            except Exception as e:
+                print(f"Error adding chart: {e}")
+
         details = data.get('details', {})
         if details:
             story.append(Paragraph("Detailed Artifact Information", heading_style))
@@ -414,14 +487,12 @@ def generate_pdf():
                     story.append(Paragraph(f"<b>{title}:</b>", normal_style))
                     story.append(Paragraph(content, small_style))
                     story.append(Spacer(1, 8))
-        
-        # All Predictions Table
+
         top_k = data.get('top_k', [])
         if top_k:
             story.append(PageBreak())
             story.append(Paragraph("Complete Classification Results", heading_style))
             
-            # Create table data
             table_data = [['Rank', 'Artifact Type', 'Confidence']]
             for i, prediction in enumerate(top_k, 1):
                 table_data.append([
@@ -430,7 +501,6 @@ def generate_pdf():
                     f"{prediction.get('probability', 0)*100:.2f}%"
                 ])
             
-            # Create table
             table = Table(table_data, colWidths=[1*inch, 3*inch, 1.5*inch])
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -447,20 +517,18 @@ def generate_pdf():
             
             story.append(table)
             story.append(Spacer(1, 20))
-        
-        # Finds Near Me Section
+
         story.append(Paragraph("Archaeological Sites Near Rajapalayam, Tamil Nadu", heading_style))
         story.append(Paragraph("Explore these significant archaeological sites in the region:", normal_style))
         story.append(Spacer(1, 10))
-        
+
         for i, site in enumerate(REGIONAL_FINDS, 1):
             story.append(Paragraph(f"<b>{i}. {site['site']}</b>", normal_style))
-            story.append(Paragraph(f"<i>Distance: {site['distance']}</i>", small_style))
+            story.append(Paragraph(f"<i>Distance: {site.get('distance', 'N/A')}</i>", small_style))
             story.append(Paragraph(f"<b>Significance:</b> {site['significance']}", small_style))
             story.append(Paragraph(f"<b>Key Artifacts:</b> {site['key_artifacts']}", small_style))
             story.append(Spacer(1, 12))
-        
-        # Carbon Dating Results (if available)
+
         c14_data = data.get('c14_data')
         if c14_data:
             story.append(PageBreak())
@@ -469,24 +537,19 @@ def generate_pdf():
             story.append(Paragraph(f"Calculated Age (BP): {c14_data.get('age_bp', 'N/A')} years", normal_style))
             story.append(Paragraph(f"Calendar Year: {c14_data.get('calendar_year', 'N/A')} CE/BCE", normal_style))
             story.append(Spacer(1, 10))
-            
-            # Add timeline context
+
             story.append(Paragraph("Historical Context:", heading_style))
             story.append(Paragraph("This date places your artifact within the following historical periods:", normal_style))
-        
-        # Footer with timestamp
+
         story.append(Spacer(1, 20))
         story.append(Paragraph(f"Report generated on: {time.strftime('%Y-%m-%d %H:%M:%S')}", small_style))
         story.append(Paragraph("Generated by Archaeological Artifact Identification System", small_style))
         
-        # Build PDF
         doc.build(story)
         
-        # Get PDF content
         pdf_content = buffer.getvalue()
         buffer.close()
         
-        # Return as response
         response = app.response_class(
             response=pdf_content,
             status=200,
@@ -496,6 +559,9 @@ def generate_pdf():
         return response
         
     except Exception as e:
+        if 'temp_img_path' in locals() and os.path.exists(temp_img_path):
+            os.remove(temp_img_path)
+        
         return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
 
 # ------------------------------
@@ -503,3 +569,4 @@ def generate_pdf():
 # ------------------------------
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+    
