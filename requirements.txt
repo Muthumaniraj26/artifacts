@@ -34,4 +34,13 @@ flake8>=6.0.0
 # Optional: Advanced Features
 # wandb>=0.15.0  # for experiment tracking
 # mlflow>=2.3.0  # for model versioning
+Flask
+torch
+torchvision
+Pillow
+matplotlib
+reportlab
+flask-cors
+uvicorn
+
 
