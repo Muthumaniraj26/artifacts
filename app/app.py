@@ -271,13 +271,25 @@ def predict_all_probs(image_bytes: bytes):
         logits = model(x)
         probs = torch.softmax(logits, dim=1)[0]
         return probs.tolist()
-
+    
+secret_file = "/etc/secrets/my_secret.env"
+if os.path.exists(secret_file):
+    with open(secret_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):  # ignore empty lines & comments
+                key, value = line.split("=", 1)
+                os.environ[key] = value
 # ------------------------------
 # Routes
 # ------------------------------
 @app.route('/')
 def index():
     return render_template('index_new.html')
+@app.route("/healthz")
+def health():
+    return "OK", 200
+
 
 @app.route('/predict', methods=['POST', 'HEAD'])
 def predict():
