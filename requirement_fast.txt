@@ -1,0 +1,15 @@
+# AI and Data Processing
+torch
+torchvision
+numpy
+Pillow
+matplotlib
+
+# Web Framework and Server
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
+
+# PDF Generation
+reportlab
