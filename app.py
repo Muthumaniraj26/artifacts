@@ -570,4 +570,4 @@ def generate_pdf():
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 
->>>>>>> 0bd2f86 (Initial commit for Flask artifact app)
+
