@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1069,3 +1070,1076 @@
     </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archaeological Artifact Identifier</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #8b5a2b;
+            --secondary-color: #d4a76a;
+            --accent-color: #7d4e2d;
+            --light-color: #f8f4e9;
+            --dark-color: #3c2f2d;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --gray-color: #9e9e9e;
+            --light-gray: #f5f5f5;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Raleway', sans-serif;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        h1 i {
+            margin-right: 10px;
+            color: var(--accent-color);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--dark-color);
+            opacity: 0.8;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            flex: 1;
+            min-width: 300px;
+            border: 2px dashed var(--secondary-color);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background-color: rgba(212, 167, 106, 0.1);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(212, 167, 106, 0.2);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .browse-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .browse-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .image-preview {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+            display: none;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carbon-dating-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .carbon-dating-section h3 {
+            margin-bottom: 15px;
+        }
+
+        .carbon-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .carbon-input label {
+            font-weight: 600;
+        }
+
+        .carbon-input input {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-color);
+            border-radius: 5px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .calculate-btn {
+            padding: 8px 15px;
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .calculate-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .carbon-results {
+            display: flex;
+            gap: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--light-gray);
+            padding: 10px 15px;
+            border-radius: 5px;
+            min-width: 150px;
+        }
+
+        .result-item span:first-child {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .analyze-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 40px;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            background-color: var(--accent-color);
+        }
+
+        .analyze-btn:disabled {
+            background-color: var(--gray-color);
+            cursor: not-allowed;
+        }
+
+        .analyze-btn i {
+            margin-right: 10px;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--light-gray);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .primary-result {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .artifact-card {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .artifact-image {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .artifact-image img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .artifact-info {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .artifact-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .confidence {
+            margin-top: 20px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background-color: var(--light-gray);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .confidence-chart {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .confidence-chart img {
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        .detailed-info {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .info-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 15px;
+            background-color: var(--light-gray);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tab-pane {
+            display: none;
+            padding: 15px;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .all-predictions {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .predictions-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .prediction-item {
+            padding: 15px;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .prediction-class {
+            font-weight: 600;
+        }
+
+        .prediction-confidence {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .timeline-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .timeline-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .timeline {
+            height: 100px;
+            min-width: 1000px;
+            position: relative;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+        }
+
+        .era-marker {
+            position: absolute;
+            height: 100%;
+            top: 0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .era-marker:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .regional-finds {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .sites-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .site-card {
+            padding: 20px;
+            background-color: var(--light-gray);
+            border-radius: 10px;
+            transition: var(--transition);
+        }
+
+        .site-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .site-card h3 {
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        .site-distance {
+            font-style: italic;
+            margin-bottom: 10px;
+            color: var(--gray-color);
+        }
+
+        .site-significance, .site-artifacts {
+            margin-bottom: 15px;
+        }
+
+        .site-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .site-link:hover {
+            text-decoration: underline;
+        }
+
+        .report-actions {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .pdf-btn {
+            padding: 15px 30px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pdf-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .pdf-btn i {
+            margin-right: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 1px solid var(--secondary-color);
+            color: var(--gray-color);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-section {
+                flex-direction: column;
+            }
+            
+            .carbon-results {
+                flex-direction: column;
+            }
+            
+            .artifact-card {
+                flex-direction: column;
+            }
+            
+            .predictions-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .sites-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-monument"></i> Archaeological Artifact Identifier</h1>
+            <p>Upload an image of an artifact to identify its type and learn about its historical significance</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & drop your artifact image here</p>
+                    <p>or</p>
+                    <label for="fileInput" class="browse-btn">Browse Files</label>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+                <div class="image-preview" id="imagePreview">
+                    <img id="previewImg" src="" alt="Preview">
+                    <button class="remove-btn" id="removeBtn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <div class="carbon-dating-section">
+                <h3>Optional: Carbon-14 Dating Information</h3>
+                <div class="carbon-input">
+                    <label for="c14Input">C14 Percentage Remaining (0-100%):</label>
+                    <input type="number" id="c14Input" min="0" max="100" step="0.01" placeholder="e.g., 45.2">
+                    <button id="calculateC14" class="calculate-btn">Calculate Age</button>
+                </div>
+                <div class="carbon-results" id="carbonResults">
+                    <div class="result-item">
+                        <span>Age (BP):</span>
+                        <span id="ageBP">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Calendar Year:</span>
+                        <span id="calendarYear">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="analyzeBtn" class="analyze-btn" disabled>
+                <i class="fas fa-search"></i> Analyze Artifact
+            </button>
+
+            <div class="results-section" id="resultsSection">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing artifact...</p>
+                </div>
+
+                <div class="primary-result" id="primaryResult">
+                    <h2>Primary Identification</h2>
+                    <div class="artifact-card">
+                        <div class="artifact-image">
+                            <img id="resultImage" src="" alt="Artifact">
+                        </div>
+                        <div class="artifact-info">
+                            <h3 id="artifactClass"></h3>
+                            <div class="confidence">
+                                <span>Confidence:</span>
+                                <span id="confidenceValue"></span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" id="confidenceFill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="confidence-chart" id="confidenceChart">
+                    <h2>Confidence Distribution</h2>
+                    <img id="chartImg" src="" alt="Confidence Chart">
+                </div>
+
+                <div class="detailed-info" id="detailedInfo">
+                    <h2>Detailed Information</h2>
+                    <div class="info-tabs">
+                        <button class="tab-btn active" data-tab="description">Description</button>
+                        <button class="tab-btn" data-tab="era">Historical Era</button>
+                        <button class="tab-btn" data-tab="material">Material</button>
+                        <button class="tab-btn" data-tab="significance">Significance</button>
+                        <button class="tab-btn" data-tab="context">Cultural Context</button>
+                        <button class="tab-btn" data-tab="technology">Technology</button>
+                    </div>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="description">
+                            <p id="descriptionText"></p>
+                        </div>
+                        <div class="tab-pane" id="era">
+                            <p id="eraText"></p>
+                        </div>
+                        <div class="tab-pane" id="material">
+                            <p id="materialText"></p>
+                        </div>
+                        <div class="tab-pane" id="significance">
+                            <p id="significanceText"></p>
+                        </div>
+                        <div class="tab-pane" id="context">
+                            <p id="contextText"></p>
+                        </div>
+                        <div class="tab-pane" id="technology">
+                            <p id="technologyText"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="all-predictions" id="allPredictions">
+                    <h2>All Predictions</h2>
+                    <div class="predictions-list" id="predictionsList"></div>
+                </div>
+
+                <div class="timeline-section" id="timelineSection">
+                    <h2>Historical Timeline</h2>
+                    <div class="timeline-container">
+                        <div class="timeline" id="timeline"></div>
+                    </div>
+                </div>
+
+                <div class="regional-finds" id="regionalFinds">
+                    <h2>Archaeological Sites Near Rajapalayam</h2>
+                    <div class="sites-container" id="sitesContainer"></div>
+                </div>
+
+                <div class="report-actions">
+                    <button id="generatePdf" class="pdf-btn">
+                        <i class="fas fa-file-pdf"></i> Generate PDF Report
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Archaeological Artifact Identification System &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            const removeBtn = document.getElementById('removeBtn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const resultsSection = document.getElementById('resultsSection');
+            const loading = document.getElementById('loading');
+            const primaryResult = document.getElementById('primaryResult');
+            const confidenceChart = document.getElementById('confidenceChart');
+            const detailedInfo = document.getElementById('detailedInfo');
+            const allPredictions = document.getElementById('allPredictions');
+            const timelineSection = document.getElementById('timelineSection');
+            const regionalFinds = document.getElementById('regionalFinds');
+            const c14Input = document.getElementById('c14Input');
+            const calculateC14 = document.getElementById('calculateC14');
+            const ageBP = document.getElementById('ageBP');
+            const calendarYear = document.getElementById('calendarYear');
+            const generatePdf = document.getElementById('generatePdf');
+            
+            // Variables
+            let currentImageFile = null;
+            let c14Data = null;
+            let imageDataUrl = null;
+            
+            // Event Listeners
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleImageUpload(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleImageUpload(e.target.files[0]);
+                }
+            });
+            
+            removeBtn.addEventListener('click', removeImage);
+            
+            analyzeBtn.addEventListener('click', analyzeArtifact);
+            
+            calculateC14.addEventListener('click', calculateCarbonAge);
+            
+            generatePdf.addEventListener('click', generatePDFReport);
+            
+            // Tab functionality for detailed info
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Remove active class from all buttons and panes
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                    
+                    // Add active class to clicked button and corresponding pane
+                    btn.classList.add('active');
+                    const tabId = btn.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Functions
+            function handleImageUpload(file) {
+                if (!file.type.match('image.*')) {
+                    alert('Please upload an image file');
+                    return;
+                }
+                
+                currentImageFile = file;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imageDataUrl = e.target.result; // Store the data URL for PDF generation
+                    imagePreview.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function removeImage() {
+                currentImageFile = null;
+                imageDataUrl = null;
+                previewImg.src = '';
+                imagePreview.style.display = 'none';
+                fileInput.value = '';
+                analyzeBtn.disabled = true;
+            }
+            
+            function calculateCarbonAge() {
+                const percentage = parseFloat(c14Input.value);
+                
+                if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
+                    alert('Please enter a valid C14 percentage between 0 and 100');
+                    return;
+                }
+                
+                fetch('/calculate_c14_age', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ c14_percentage: percentage })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    ageBP.textContent = `${data.age_bp} years`;
+                    calendarYear.textContent = data.calendar_year < 0 ? 
+                        `${Math.abs(data.calendar_year)} BCE` : 
+                        `${data.calendar_year} CE`;
+                    
+                    c14Data = data;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to calculate carbon age');
+                });
+            }
+            
+            function analyzeArtifact() {
+                if (!currentImageFile) {
+                    alert('Please upload an image first');
+                    return;
+                }
+                
+                // Show loading state
+                resultsSection.style.display = 'block';
+                loading.style.display = 'block';
+                primaryResult.style.display = 'none';
+                confidenceChart.style.display = 'none';
+                detailedInfo.style.display = 'none';
+                allPredictions.style.display = 'none';
+                timelineSection.style.display = 'none';
+                regionalFinds.style.display = 'none';
+                document.querySelector('.report-actions').style.display = 'none';
+                
+                const formData = new FormData();
+                formData.append('image', currentImageFile);
+                
+                if (c14Data) {
+                    formData.append('c14_data', JSON.stringify(c14Data));
+                }
+                
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    displayResults(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(`Analysis failed: ${error.message}`);
+                    loading.style.display = 'none';
+                });
+            }
+            
+            function displayResults(data) {
+                // Hide loading, show results
+                loading.style.display = 'none';
+                primaryResult.style.display = 'block';
+                confidenceChart.style.display = 'block';
+                detailedInfo.style.display = 'block';
+                allPredictions.style.display = 'block';
+                timelineSection.style.display = 'block';
+                regionalFinds.style.display = 'block';
+                document.querySelector('.report-actions').style.display = 'block';
+                
+                // Set result image
+                document.getElementById('resultImage').src = previewImg.src;
+                
+                // Display primary result
+                document.getElementById('artifactClass').textContent = data.top1.class;
+                const confidencePercent = (data.top1.probability * 100).toFixed(2);
+                document.getElementById('confidenceValue').textContent = `${confidencePercent}%`;
+                document.getElementById('confidenceFill').style.width = `${confidencePercent}%`;
+                
+                // Display confidence chart
+                document.getElementById('chartImg').src = data.chart_url;
+                
+                // Display detailed information
+                document.getElementById('descriptionText').textContent = data.details.description || 'No description available';
+                document.getElementById('eraText').textContent = data.details.era || 'No era information available';
+                document.getElementById('materialText').textContent = data.details.material || 'No material information available';
+                document.getElementById('significanceText').textContent = data.details.significance || 'No significance information available';
+                document.getElementById('contextText').textContent = data.details.cultural_context || 'No cultural context available';
+                document.getElementById('technologyText').textContent = data.details.technological_markers || 'No technological markers available';
+                
+                // Display all predictions
+                const predictionsList = document.getElementById('predictionsList');
+                predictionsList.innerHTML = '';
+                
+                data.top_k.forEach(prediction => {
+                    const predictionItem = document.createElement('div');
+                    predictionItem.className = 'prediction-item';
+                    predictionItem.innerHTML = `
+                        <span class="prediction-class">${prediction.class}</span>
+                        <span class="prediction-confidence">${(prediction.probability * 100).toFixed(2)}%</span>
+                    `;
+                    predictionsList.appendChild(predictionItem);
+                });
+                
+                // Load timeline
+                fetchTimelineData();
+                
+                // Load regional finds
+                fetchRegionalFinds();
+            }
+            
+            function fetchTimelineData() {
+                fetch('/timeline_eras')
+                .then(response => response.json())
+                .then(eras => {
+                    renderTimeline(eras);
+                })
+                .catch(error => {
+                    console.error('Error loading timeline:', error);
+                });
+            }
+            
+            function renderTimeline(eras) {
+                const timeline = document.getElementById('timeline');
+                timeline.innerHTML = '';
+                
+                // Find the overall date range
+                const minDate = Math.min(...eras.map(era => era.start));
+                const maxDate = Math.max(...eras.map(era => era.end));
+                const dateRange = maxDate - minDate;
+                
+                eras.forEach(era => {
+                    const startPos = ((era.start - minDate) / dateRange) * 100;
+                    const width = ((era.end - era.start) / dateRange) * 100;
+                    
+                    const eraMarker = document.createElement('div');
+                    eraMarker.className = 'era-marker';
+                    eraMarker.style.left = `${startPos}%`;
+                    eraMarker.style.width = `${width}%`;
+                    eraMarker.style.backgroundColor = era.color;
+                    eraMarker.title = `${era.name}: ${era.description}`;
+                    eraMarker.textContent = era.name;
+                    
+                    timeline.appendChild(eraMarker);
+                });
+            }
+            
+            function fetchRegionalFinds() {
+                fetch('/regional_finds')
+                .then(response => response.json())
+                .then(sites => {
+                    renderRegionalFinds(sites);
+                })
+                .catch(error => {
+                    console.error('Error loading regional finds:', error);
+                });
+            }
+            
+            function renderRegionalFinds(sites) {
+                const sitesContainer = document.getElementById('sitesContainer');
+                sitesContainer.innerHTML = '';
+                
+                sites.forEach(site => {
+                    const siteCard = document.createElement('div');
+                    siteCard.className = 'site-card';
+                    siteCard.innerHTML = `
+                        <h3>${site.site}</h3>
+                        <p class="site-distance">${site.distance}</p>
+                        <p class="site-significance"><strong>Significance:</strong> ${site.significance}</p>
+                        <p class="site-artifacts"><strong>Key Artifacts:</strong> ${site.key_artifacts}</p>
+                        <a href="${site.link}" target="_blank" class="site-link">Learn more</a>
+                    `;
+                    
+                    sitesContainer.appendChild(siteCard);
+                });
+            }
+            
+            function generatePDFReport() {
+                // Prepare the data to send to the server
+                const reportData = {
+                    top1: {
+                        class: document.getElementById('artifactClass').textContent,
+                        probability: parseFloat(document.getElementById('confidenceValue').textContent) / 100
+                    },
+                    top_k: Array.from(document.querySelectorAll('.prediction-item')).map(item => ({
+                        class: item.querySelector('.prediction-class').textContent,
+                        probability: parseFloat(item.querySelector('.prediction-confidence').textContent) / 100
+                    })),
+                    details: {
+                        description: document.getElementById('descriptionText').textContent,
+                        era: document.getElementById('eraText').textContent,
+                        material: document.getElementById('materialText').textContent,
+                        significance: document.getElementById('significanceText').textContent,
+                        cultural_context: document.getElementById('contextText').textContent,
+                        technological_markers: document.getElementById('technologyText').textContent
+                    },
+                    chart_url: document.getElementById('chartImg').src,
+                    c14_data: c14Data,
+                    // Include the image data URL for the PDF
+                    image_data: imageDataUrl
+                };
+                
+                fetch('/generate_pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(reportData)
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.blob();
+                    }
+                    throw new Error('PDF generation failed');
+                })
+                .then(blob => {
+                    // Create a download link and trigger it
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'artifact_report.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to generate PDF report');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+>>>>>>> 0bd2f86 (Initial commit for Flask artifact app)
