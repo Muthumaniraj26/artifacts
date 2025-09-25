@@ -42,5 +42,7 @@ matplotlib
 reportlab
 flask-cors
 uvicorn
+gdown
+
 
 
