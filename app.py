@@ -212,27 +212,28 @@ def create_model(num_classes: int):
     return model
 
 ckpt_path = 'artifact_with_val.pth'
-if not os.path.exists(ckpt_path):
-    raise FileNotFoundError(f"'{ckpt_path}' not found.")
 
+# Download the file if it's not present
 if not os.path.exists(ckpt_path):
-    file_id = "1zZU-WBIgGWRsPkdrHI-OPteYPVSD1Pqf"
+    file_id = "1zZU-WBIgGWRsPkdrHI-OPteYPVSD1Pqf"  # your Drive file ID
     url = f"https://drive.google.com/uc?id={file_id}"
-    print("Downloading model from Google Drive…")
-    gdown.download(url, "artifact_with_val.pth", quiet=False)
+    print("📥 Downloading model from Google Drive…")
+    gdown.download(url, ckpt_path, quiet=False)
 
+# Now load your model
 model = create_model(NUM_CLASSES)
-state = torch.load(ckpt_path, map_location="cpu")
+
 try:
     state = torch.load(ckpt_path, map_location='cpu')
-    if any(k.startswith('module.') for k in state.keys()):
+    # Remove 'module.' prefix if it exists (common when trained with DataParallel)
+    if isinstance(state, dict) and any(k.startswith('module.') for k in state.keys()):
         state = {k.replace('module.', ''): v for k, v in state.items()}
+
     model.load_state_dict(state)
     model.eval()
     print("✅ Model loaded successfully")
 except Exception as e:
     print(f"⚠️ Model loading failed: {e}. Using random weights for demo.")
-
 
 # ------------------------------
 # Preprocessing & Prediction Functions
