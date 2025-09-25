@@ -23,6 +23,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 import json
 from PIL import Image as PILImage, UnidentifiedImageError
 import base64
+import gdown
 
 # ------------------------------
 # Flask Setup
@@ -214,7 +215,14 @@ ckpt_path = 'artifact_with_val.pth'
 if not os.path.exists(ckpt_path):
     raise FileNotFoundError(f"'{ckpt_path}' not found.")
 
+if not os.path.exists(ckpt_path):
+    file_id = "1zZU-WBIgGWRsPkdrHI-OPteYPVSD1Pqf"
+    url = f"https://drive.google.com/uc?id={file_id}"
+    print("Downloading model from Google Drive…")
+    gdown.download(url, "artifact_with_val.pth", quiet=False)
+
 model = create_model(NUM_CLASSES)
+state = torch.load(ckpt_path, map_location="cpu")
 try:
     state = torch.load(ckpt_path, map_location='cpu')
     if any(k.startswith('module.') for k in state.keys()):
@@ -224,6 +232,7 @@ try:
     print("✅ Model loaded successfully")
 except Exception as e:
     print(f"⚠️ Model loading failed: {e}. Using random weights for demo.")
+
 
 # ------------------------------
 # Preprocessing & Prediction Functions
@@ -271,13 +280,25 @@ def predict_all_probs(image_bytes: bytes):
         logits = model(x)
         probs = torch.softmax(logits, dim=1)[0]
         return probs.tolist()
-
+    
+secret_file = "/etc/secrets/my_secret.env"
+if os.path.exists(secret_file):
+    with open(secret_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):  # ignore empty lines & comments
+                key, value = line.split("=", 1)
+                os.environ[key] = value
 # ------------------------------
 # Routes
 # ------------------------------
 @app.route('/')
 def index():
     return render_template('index_new.html')
+@app.route("/healthz")
+def health():
+    return "OK", 200
+
 
 @app.route('/predict', methods=['POST', 'HEAD'])
 def predict():
@@ -568,6 +589,9 @@ def generate_pdf():
 # Main Execution
 # ------------------------------
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
-
+        import uvicorn
+    # Use reload=True for development to automatically restart the server on code changes
+    # To
+        uvicorn.run("app.app:app", host='0.0.0.0', port=5000, reload=True)
+        
+        app.run(host="0.0.0.0", port=5000, debug=True)
